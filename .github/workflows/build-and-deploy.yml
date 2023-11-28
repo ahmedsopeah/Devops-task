@@ -1,0 +1,38 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tag: web:latest
+
+  deploy:
+    needs: build
+    runs-on: kubernetes-1.24
+
+    steps:
+      - name: Set up kubectl
+        uses: actions/setup-k8s@v3
+        with:
+          kubernetes-context: kubernetes-context
+
+      - name: Apply Terraform changes
+        uses: hashicorp/terraform-action@v2
+        with:
+          init: true
+          plan: true
+          apply: true
+          auto-approve: true
